@@ -1,0 +1,214 @@
+{
+  "categories": {
+    "MINECRAFT": {
+      "summary": [
+        {
+          "tingkat": "ENHANCE",
+          "ram": "4GB",
+          "storage": "156GB",
+          "is_available": true
+        },
+        {
+          "tingkat": "EXTREME",
+          "ram": "0GB",
+          "storage": "0GB",
+          "is_available": false
+        }
+      ],
+      "detail": {
+        "ENHANCE": {
+          "type": "MINECRAFT",
+          "description": "Hosting Minecraft paket ENHANCE",
+          "plans": {
+            "1": {
+              "price": 7000,
+              "ram": "1GB",
+              "storage": "45GB",
+              "cpu": "200%",
+              "bandwidth": "UNLIMITED",
+              "location": "WEST JAVA"
+            },
+            "2": {
+              "price": 14000,
+              "ram": "2GB",
+              "storage": "50GB",
+              "cpu": "200%",
+              "bandwidth": "UNLIMITED",
+              "location": "WEST JAVA"
+            },
+            "3": {
+              "price": 21000,
+              "ram": "3GB",
+              "storage": "55GB",
+              "cpu": "200%",
+              "bandwidth": "UNLIMITED",
+              "location": "WEST JAVA"
+            },
+            "4": {
+              "price": 28000,
+              "ram": "4GB",
+              "storage": "60GB",
+              "cpu": "200%",
+              "bandwidth": "UNLIMITED",
+              "location": "WEST JAVA"
+            },
+            "5": {
+              "price": 35000,
+              "ram": "5GB",
+              "storage": "65GB",
+              "cpu": "200%",
+              "bandwidth": "UNLIMITED",
+              "location": "WEST JAVA"
+            },
+            "6": {
+              "price": 42000,
+              "ram": "6GB",
+              "storage": "68GB",
+              "cpu": "200%",
+              "bandwidth": "UNLIMITED",
+              "location": "WEST JAVA"
+            },
+            "7": {
+              "price": 49000,
+              "ram": "7GB",
+              "storage": "70GB",
+              "cpu": "200%",
+              "bandwidth": "UNLIMITED",
+              "location": "WEST JAVA"
+            }
+          }
+        },
+        "EXTREME": {
+          "type": "MINECRAFT",
+          "description": "Hosting Minecraft paket EXTREME",
+          "plans": {
+            "1": {
+              "price": 15000,
+              "ram": "1GB DDR4",
+              "storage": "10GB",
+              "cpu": "200%",
+              "bandwidth": "UNLIMITED",
+              "location": "WEST JAVA"
+            },
+            "2": {
+              "price": 30000,
+              "ram": "2GB DDR4",
+              "storage": "20GB",
+              "cpu": "300%",
+              "bandwidth": "UNLIMITED",
+              "location": "WEST JAVA"
+            },
+            "3": {
+              "price": 45000,
+              "ram": "3GB DDR4",
+              "storage": "30GB",
+              "cpu": "400%",
+              "bandwidth": "UNLIMITED",
+              "location": "WEST JAVA"
+            }
+          }
+        }
+      }
+    },
+    "VPS": {
+      "summary": [
+        {
+          "tingkat": "STANDARD",
+          "ram": "4GB",
+          "storage": "100GB",
+          "is_available": true
+        },
+        {
+          "tingkat": "PREMIUM",
+          "ram": "8GB",
+          "storage": "200GB",
+          "is_available": true
+        }
+      ],
+      "detail": {
+        "STANDARD": {
+          "type": "VPS",
+          "description": "Virtual Private Server STANDARD",
+          "plans": {
+            "1": {
+              "price": 50000,
+              "ram": "4GB",
+              "storage": "100GB",
+              "cpu": "2 Cores",
+              "bandwidth": "UNLIMITED",
+              "location": "WEST JAVA"
+            },
+            "2": {
+              "price": 75000,
+              "ram": "6GB",
+              "storage": "150GB",
+              "cpu": "3 Cores",
+              "bandwidth": "UNLIMITED",
+              "location": "WEST JAVA"
+            }
+          }
+        },
+        "PREMIUM": {
+          "type": "VPS",
+          "description": "Virtual Private Server PREMIUM",
+          "plans": {
+            "1": {
+              "price": 100000,
+              "ram": "8GB",
+              "storage": "200GB",
+              "cpu": "4 Cores",
+              "bandwidth": "UNLIMITED",
+              "location": "WEST JAVA"
+            }
+          }
+        }
+      }
+    },
+    "WEBSITE": {
+      "summary": [
+        {
+          "tingkat": "BASIC",
+          "ram": "2GB",
+          "storage": "50GB",
+          "is_available": true
+        },
+        {
+          "tingkat": "PRO",
+          "ram": "0.5GB",
+          "storage": "10GB",
+          "is_available": false
+        }
+      ],
+      "detail": {
+        "BASIC": {
+          "type": "WEBSITE",
+          "description": "Hosting Website BASIC",
+          "plans": {
+            "1": {
+              "price": 25000,
+              "ram": "2GB",
+              "storage": "50GB",
+              "cpu": "100%",
+              "bandwidth": "UNLIMITED",
+              "location": "WEST JAVA"
+            }
+          }
+        },
+        "PRO": {
+          "type": "WEBSITE",
+          "description": "Hosting Website PRO",
+          "plans": {
+            "1": {
+              "price": 40000,
+              "ram": "4GB",
+              "storage": "100GB",
+              "cpu": "200%",
+              "bandwidth": "UNLIMITED",
+              "location": "WEST JAVA"
+            }
+          }
+        }
+      }
+    }
+  }
+}
