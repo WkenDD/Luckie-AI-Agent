@@ -1,5 +1,6 @@
 # 🤖 Luckie AI - Discord Customer Service Bot
 
+[![Version](https://img.shields.io/badge/version-1.3-purple.svg)](https://github.com/wkendd/luckie-ai-discord-bot)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node.js-16.0+-brightgreen.svg)](https://nodejs.org/)
 [![Discord.js](https://img.shields.io/badge/discord.js-14.0+-7289da.svg)](https://discord.js.org/)
