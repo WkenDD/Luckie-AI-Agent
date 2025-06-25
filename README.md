@@ -41,7 +41,7 @@ Persyaratan Sistem
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/yourusername/luckie-ai-discord-bot.git
+git clone https://github.com/wkendd/luckie-ai-discord-bot.git
 cd luckie-ai-discord-bot
 ```
 
