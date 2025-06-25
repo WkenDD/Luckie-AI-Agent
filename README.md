@@ -239,6 +239,16 @@ node_modules/
 
 Project ini dilisensikan under MIT License - lihat file [LICENSE](LICENSE) untuk detail.
 
+---
+
+## 📝 Changelog
+*Luckie v1.3-privier (2025-06-25)*
+
+- 🛠️ Perbaikan masalah pembacaan file dataStock.json untuk memastikan akses data yang lebih akurat.
+- 🧠 Peningkatan Pemahaman AI, Optimalisasi pemrosesan bahasa AI untuk memahami kata-per-kata dengan lebih akurat, memberikan respons yang lebih alami.
+- ⏯️ Fitur Pause/Play AI Chat: Menambahkan fungsi pause dan play untuk obrolan AI di channel
+
+---
 
 
 ## 🙏 Acknowledgments
@@ -247,6 +257,7 @@ Project ini dilisensikan under MIT License - lihat file [LICENSE](LICENSE) untuk
 - [Google Generative AI](https://ai.google.dev/) - AI engine yang cerdas
 - [Node.js](https://nodejs.org/) - Runtime environment
  
+---
 
 ## 📞 Support
 
