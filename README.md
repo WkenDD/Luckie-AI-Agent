@@ -1,6 +1,6 @@
 # 🤖 Luckie AI - Discord Customer Service Bot
 
-[![Version](https://img.shields.io/badge/version-1.3-purple.svg)](https://github.com/wkendd/luckie-ai-discord-bot)
+[![Version](https://img.shields.io/badge/version-1.4-purple.svg)](https://github.com/wkendd/luckie-ai-discord-bot)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node.js-16.0+-brightgreen.svg)](https://nodejs.org/)
 [![Discord.js](https://img.shields.io/badge/discord.js-14.0+-7289da.svg)](https://discord.js.org/)
@@ -241,11 +241,9 @@ Project ini dilisensikan under MIT License - lihat file [LICENSE](LICENSE) untuk
 
 
 ## 📝 Changelog
-*Luckie v1.3-privier (2025-06-25)*
+*Luckie v1.4-privier (2025-06-26)*
 
-- 🛠️ Perbaikan masalah pembacaan file dataStock.json untuk memastikan akses data yang lebih akurat.
-- 🧠 Peningkatan Pemahaman AI, Optimalisasi pemrosesan bahasa AI untuk memahami kata-per-kata dengan lebih akurat, memberikan respons yang lebih alami.
-- ⏯️ Fitur Pause/Play AI Chat: Menambahkan fungsi pause dan play untuk obrolan AI di channel
+- 🛠️ Memperbarui embed dari control panel AI ( !sk control )
 
 
 
