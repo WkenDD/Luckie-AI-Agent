@@ -1,71 +1,49 @@
-// ================================ //
-// ==  BOT DISCORD SANKU STUDIO  == //
-// ==  Luckie AI + Stock System  == //
-// ================================ //
-//
-// ------------ Catatan -----------
-// Ini file utama `index.js` buat bot Discord AI agent nya.
-
-// - AI berbasis Gemini buat jawab chat customer
-// ( AI bebas pake model apa aja, tapi saran gemini-2.5-flash karena jawabnya cepet)
-// - Sistem parsing user (beli, tanya, dll)
-// - Deteksi stock hosting dari file JSON "dataStock.json"
-// - Ajarin AI buar ga terlalu tolol "luckie-template.txt"
-// - Perintah admin buat nyalain/matiin AI di tiap channel yang masuk dalam category .env "!sk control"
-//
-// TOLONG JANGAN HAPUS ATAU UBAH KODE KECUALI UDAH NGERTI!!
-// ==========================================
-
-// === IMPORT YANG HARUS ADA DI ATAS ===
-// Kalo ada yang kurang, bot lu bisa error atau gak jalan.
-require("dotenv").config(); // Ini buat baca file `.env`, isinya token bot sama API key Gemini. JANGAN SAMPE KETAHUAN ORANG LAIN!
+// index.js
+require("dotenv").config();
 const {
   Client,
   GatewayIntentBits,
   ChannelType,
   PermissionsBitField,
-} = require("discord.js"); // Ini library utama Discord.js. Buat ngidupin bot, nanggepin pesan, dll.
+} = require("discord.js");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const fs = require("fs").promises; // Ini buat baca/tulis file secara async (gak bikin bot nge-freeze). Penting buat baca stok sama status AI.
-const path = require("path"); // Ini buat ngatur path file lokal, biar gak pusing beda OS (Windows/Linux).
+const fs = require("fs").promises;
+const path = require("path");
+const { EmbedBuilder } = require('discord.js');
 
-// === KONFIGURASI DASAR YANG DIPAKE DI SELURUH BOT ===
-// Bagian ini kayak setelan awal bot lu. Kalo mau ganti-ganti, di sini tempatnya.
-const DISCORD_TOKEN = process.env.DISCORD_TOKEN; // Token bot Discord lu, ngambilnya dari file .env.
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY; // API key Gemini lu, juga dari .env.
-const TICKET_CATEGORY_ID = process.env.TICKET_CATEGORY_ID; // ID kategori Discord tempat channel tiket lu dibuat. Contoh: "123456789012345678"
-const COMMAND_PREFIX = process.env.COMMAND_PREFIX || "!sk"; // Prefix buat command admin, defaultnya `!sk`. Kalo mau ganti jadi `!agus`, `!bakekok` juga bisa.
-const TEMPLATE_PATH = path.join(__dirname, "luckie-template.txt"); // Path ke file template prompt buat AI. Ini buat ngajarin Luckie biar gak TOLOL amat.
+// Konfigurasi
+const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+// ID KATEGORI TEMPAT TIKET DIBUAT (misal: "123456789012345678")
+const TICKET_CATEGORY_ID = process.env.TICKET_CATEGORY_ID;
+// PREFIX UNTUK PERINTAH KONTROL (misal: "!sk")
+const COMMAND_PREFIX = process.env.COMMAND_PREFIX || "!sk";
 
-// === CLIENT BOT DISCORD ===
+const TEMPLATE_PATH = path.join(__dirname, "luckie-template.txt");
+
 const client = new Client({
   intents: [
-    GatewayIntentBits.Guilds, // Biar bot bisa lihat server (guild) lu.
-    GatewayIntentBits.GuildMessages, // Biar bot bisa baca pesan di server.
-    GatewayIntentBits.MessageContent, // WAJIB aktifin ini di Developer Portal Discord! Kalo nggak, bot lu gak bisa baca isi pesan.
-    GatewayIntentBits.GuildMembers, // Buat akses info member server, kayak username yang ngirim pesan. WAJIB aktifin juga di Developer Portal.
-    // GatewayIntentBits.GuildPresences, // Opsional nih. Kalo emang butuh info status online/offline user. Tapi kudu aktifin juga.
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent, // Privileged Intent, harus diaktifkan di Developer Portal
+    GatewayIntentBits.GuildMembers, // Privileged Intent, harus diaktifkan di Developer Portal
+    // GatewayIntentBits.GuildPresences, // Opsional, hanya jika benar-benar dibutuhkan, dan harus diaktifkan
   ],
 });
 
-// === INISIALISASI GEMINI AI ===
-// Ini cara bot lu "ngobrol" sama Gemini AI.
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY); // Inisialisasi API Gemini.
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }); // Pake model `gemini-2.5-flash` biar cepet responsnya. Bisa diganti ke yang lain kalo mau, tapi ini paling oke buat chat "kayaknya".
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-// === MAP BUAT STATUS PAUSE AI PER CHANNEL ===
-// Ini buat nyimpen data channel mana aja yang AI-nya di-pause. Jadi tiap channel tiket bisa diatur AI-nya idup/mati.
-const AI_PAUSE_STATUS = new Map(); // Bentuknya `{ channelId: true/false }`, true artinya dipause.
-const PAUSE_STATUS_FILE = path.join(__dirname, "ai_pause_status.json"); // File buat nyimpen status pause ini biar gak ilang pas bot restart.
+// Map untuk menyimpan status AI per channel tiket: { 'channelId': true/false (paused/not paused) }
+const AI_PAUSE_STATUS = new Map();
+const PAUSE_STATUS_FILE = path.join(__dirname, "ai_pause_status.json");
 
-// === FUNCTION SIMPEN DAN LOAD STATUS PAUSE ===
-// Fungsi buat ngelola status AI pause di setiap channel.
+// --- Fungsi untuk Mengelola Status Pause ---
 async function savePauseStatus() {
   const obj = {};
-  AI_PAPAUSE_STATUS.forEach((value, key) => {
+  AI_PAUSE_STATUS.forEach((value, key) => {
     obj[key] = value;
   });
-  // Nulis objek status pause ke file JSON. Biar persist.
   await fs.writeFile(PAUSE_STATUS_FILE, JSON.stringify(obj, null, 2));
 }
 
@@ -76,24 +54,23 @@ async function loadPauseStatus() {
     for (const key in parsedData) {
       AI_PAUSE_STATUS.set(key, parsedData[key]);
     }
-    console.log("Status AI pause berhasil dimuat."); // Kalo berhasil, muncul di konsol.
+    console.log("AI pause status loaded.");
   } catch (error) {
     if (error.code === "ENOENT") {
-      console.log("File status AI pause tidak ditemukan, mulai dari awal."); // Kalo file-nya belum ada, yaudah bikin baru.
+      console.log("No AI pause status file found, starting fresh.");
     } else {
-      console.error("Gagal memuat status AI pause:", error); // Kalo ada error lain, laporin.
+      console.error("Failed to load AI pause status:", error);
     }
   }
 }
 
-// === UTILITIES BUAT BACA TEMPLATE DAN DATA ===
-// Fungsi-fungsi pembantu buat ngambil data dari file.
+// --- Fungsi Bot Utilities ---
 async function getTemplatePrompt() {
   try {
-    return await fs.readFile(TEMPLATE_PATH, "utf8"); // Baca file `luckie-template.txt`.
+    return await fs.readFile(TEMPLATE_PATH, "utf8");
   } catch {
-    console.error("Gagal membaca template prompt. Menggunakan default.");
-    return "Kamu adalah Luckie, AI dari ExtremesID."; // Kalo gagal, pake template default.
+    console.error("Failed to read template prompt. Using default.");
+    return "Kamu adalah Luckie, AI dari ExtremesID.";
   }
 }
 
@@ -103,15 +80,14 @@ async function getStockData() {
       path.join(__dirname, "dataStock.json"),
       "utf8",
     );
-    return JSON.parse(raw); // Baca file `dataStock.json` terus diparse jadi objek JavaScript.
+    return JSON.parse(raw);
   } catch (err) {
-    console.error("Gagal membaca data stok:", err); // Kalo error, kasih tahu.
-    return null; // Balikin null biar fungsi yang manggil bisa tahu kalo datanya gak ada.
+    console.error("Gagal membaca data stok:", err);
+    return null;
   }
 }
 
 function formatRupiah(number) {
-  // Fungsi buat format angka jadi rupiah biar rapi. #BanggaRupiah
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
@@ -119,22 +95,22 @@ function formatRupiah(number) {
   }).format(number);
 }
 
-// === CEK STOK TERSEDIA BERDASARKAN CATEGORY & PLAN ===
-// Fungsi ini penting buat ngecek ketersediaan stok hosting.
+// Fungsi untuk memeriksa stok berdasarkan summary
+// Mengembalikan objek { isAvailable: boolean, summaryRam: number, summaryStorage: number }
 function checkStockAvailability(categoryName, planName, stockData) {
-  const category = stockData.categories[categoryName.toUpperCase()]; // Ambil kategori (misal: MINECRAFT).
+  const category = stockData.categories[categoryName.toUpperCase()];
   if (!category)
-    return { isAvailable: false, summaryRam: 0, summaryStorage: 0 }; // Kalo kategori gak ada, ya gak available.
+    return { isAvailable: false, summaryRam: 0, summaryStorage: 0 };
 
   const summaryEntry = category.summary.find(
     (s) => s.tingkat.toUpperCase() === planName.toUpperCase(),
-  ); // Cari ringkasan stok per plan.
+  );
 
   if (summaryEntry) {
-    const summaryRam = parseFloat(summaryEntry.ram.replace("GB", "")); // Ambil RAM dari summary.
-    const summaryStorage = parseFloat(summaryEntry.storage.replace("GB", "")); // Ambil storage dari summary.
+    const summaryRam = parseFloat(summaryEntry.ram.replace("GB", ""));
+    const summaryStorage = parseFloat(summaryEntry.storage.replace("GB", ""));
 
-    // Prioritaskan `is_available` kalo ada dan `false`.
+    // Prioritaskan is_available jika ada dan false
     if (summaryEntry.is_available === false) {
       return {
         isAvailable: false,
@@ -142,8 +118,7 @@ function checkStockAvailability(categoryName, planName, stockData) {
         summaryStorage: summaryStorage,
       };
     }
-    // Kalo `is_available` gak ada atau `true`, cek RAM-nya kurang dari 2GB gak.
-    // Ini aturan lo: kalo RAM-nya di bawah 2GB, dianggap gak tersedia.
+    // Jika tidak ada is_available atau true, cek RAM < 2GB
     if (summaryRam < 2) {
       return {
         isAvailable: false,
@@ -157,45 +132,41 @@ function checkStockAvailability(categoryName, planName, stockData) {
       summaryStorage: summaryStorage,
     };
   }
-  return { isAvailable: false, summaryRam: 0, summaryStorage: 0 }; // Kalo plan-nya gak ketemu di summary.
+  return { isAvailable: false, summaryRam: 0, summaryStorage: 0 };
 }
 
-// === ANALISIS NIAT PENGGUNA DARI PESANNYA ===
-// Fungsi ini kayak stalker jir, buat nebak maunya user apa dari chat-nya.
 function analyzeIntent(content, stockData) {
-  const lower = content.toLowerCase(); // Ubah pesan jadi huruf kecil semua biar gampang ngeceknya.
+  const lower = content.toLowerCase();
   const result = {
-    category: null, // Kategori hosting (misal: Minecraft, VPS).
-    plan: null, // Nama plan (misal: ENHANCE, STANDARD).
-    gb: null, // Jumlah GB RAM yang ditanya.
-    isSpecificQuery: false, // Kalo pertanyaannya spesifik banget.
-    queryType: "general", // Tipe pertanyaan: "list_packages", "buy", "contact", "price_spec", atau "general".
+    category: null,
+    plan: null,
+    gb: null,
+    isSpecificQuery: false,
+    queryType: "general",
   };
 
-  // Cek intent umum dulu.
   if (/paket apa saja|list paket|daftar hosting/.test(lower)) {
-    result.queryType = "list_packages"; // Kalo user nanya daftar paket.
+    result.queryType = "list_packages";
     return result;
   } else if (/beli|order|mau beli/.test(lower)) {
-    result.queryType = "buy"; // Kalo user mau beli.
+    result.queryType = "buy";
     return result;
   } else if (/kontak|hubungi|admin|whatsapp|wa/.test(lower)) {
-    result.queryType = "contact"; // Kalo user mau kontak admin.
+    result.queryType = "contact";
     return result;
   }
 
   let foundCategory = null;
   let foundPlan = null;
 
-  // Cek kategori dan plan dari data stok.
   const categories = Object.keys(stockData.categories);
   for (const cat of categories) {
     if (lower.includes(cat.toLowerCase())) {
-      foundCategory = cat; // Kategori ketemu!
+      foundCategory = cat;
       const plansInCat = Object.keys(stockData.categories[cat].detail);
       for (const plan of plansInCat) {
         if (lower.includes(plan.toLowerCase())) {
-          foundPlan = plan; // Plan ketemu!
+          foundPlan = plan;
           break;
         }
       }
@@ -206,30 +177,26 @@ function analyzeIntent(content, stockData) {
   if (foundCategory) result.category = foundCategory;
   if (foundPlan) result.plan = foundPlan;
 
-  // Cek ada angka GB gak di pesan.
   const gbMatch = lower.match(/(\d+(\.\d+)?)\s*gb/);
   if (gbMatch) result.gb = parseFloat(gbMatch[1]);
 
-  // Kalo kategori, plan, dan GB ketemu, berarti spesifik.
   if (result.category && result.plan && result.gb) {
     result.isSpecificQuery = true;
-    result.queryType = "price_spec"; // Pertanyaan harga/spesifikasi spesifik.
+    result.queryType = "price_spec";
   } else if (
     result.category &&
     result.plan &&
     /harga|berapa|biaya|tarif|spesifikasi|info/.test(lower)
   ) {
     result.isSpecificQuery = true;
-    result.queryType = "price_spec"; // Pertanyaan harga/spesifikasi umum (tanpa GB).
+    result.queryType = "price_spec";
   }
 
   return result;
 }
 
-// === BALASAN FORMAT KHUSUS BUAT NIAT SPESIFIK (ORDER, LIST, HARGA, DLL) ===
-// Fungsi ini yang nyiapin jawaban buat pertanyaan spesifik.
 async function generateFormattedReply(content, username, data) {
-  const intent = analyzeIntent(content, data); // Tebak lagi niat user.
+  const intent = analyzeIntent(content, data);
   const { category, plan, gb, queryType } = intent;
 
   if (queryType === "list_packages") {
@@ -237,7 +204,7 @@ async function generateFormattedReply(content, username, data) {
     Object.entries(data.categories).forEach(([catKey, catValue]) => {
       reply += `✨ **Hosting ${catKey.toUpperCase()}**:\n`;
       Object.entries(catValue.detail).forEach(([planKey, planValue]) => {
-        const { isAvailable } = checkStockAvailability(catKey, planKey, data); // Cek stoknya.
+        const { isAvailable } = checkStockAvailability(catKey, planKey, data);
         const status = isAvailable ? "✅ Ready" : "❌ Stok Habis";
         reply += `- \`${planKey}\` (${planValue.description}) - ${status}\n`;
       });
@@ -252,7 +219,7 @@ async function generateFormattedReply(content, username, data) {
   }
 
   if (queryType === "contact") {
-    // Kalo user nanya kontak, kasih link WA (kalo ada di data) sama website.
+    // Dapatkan lokasi dari salah satu detail pertama untuk contoh WhatsApp
     const firstCategoryKey = Object.keys(data.categories)[0];
     const firstPlanKey = Object.keys(
       data.categories[firstCategoryKey].detail,
@@ -260,9 +227,9 @@ async function generateFormattedReply(content, username, data) {
     const whatsappLink = data.categories[firstCategoryKey].detail[
       firstPlanKey
     ]?.location?.includes("WEST JAVA")
-      ? `https://wa.me/+6288987416154` // Ini contoh, bisa diganti ke nomor WA admin lu lu pada.
+      ? `https://wa.me/+6288987416154`
       : `kontak admin kami`;
-    const websiteLink = data.website || "https://extremes.web.id"; // Pastiin ada di `dataStock.json` field `website`.
+    const websiteLink = data.website || "https://extremes.web.id";
 
     return `Halo kak **${username}**! Kakak bisa menghubungi admin kami melalui beberapa cara:
 📞 **Di Discord ini**: Cukup tag admin atau bertanya di channel yang sesuai.
@@ -270,7 +237,8 @@ async function generateFormattedReply(content, username, data) {
 🔗 **Website**: Kunjungi ${websiteLink} untuk informasi lebih lanjut.`;
   }
 
-  // Kalo niatnya `price_spec` tapi kategori/plan gak ketemu, atau emang pertanyaan general.
+  // If the query type is "price_spec" but category/plan still null, or it's genuinely general query.
+  // This handles cases where analyzeIntent couldn't find a category/plan for a price/spec query.
   if (!category || !plan) {
     let generalReply = `Halo kak **${username}**! 👋 Untuk info harga atau spesifikasi, kakak bisa sebutkan **jenis hosting** (misalnya Minecraft, VPS, Website) dan **paket** serta **jumlah RAM** yang dibutuhkan. Contoh: \`harga Minecraft ENHANCE 2GB\` atau \`info VPS STANDARD\`.
 
@@ -279,14 +247,14 @@ Kalau kakak ingin tahu paket apa saja yang tersedia, ketik saja \`list paket\`.`
   }
 
   // --- MULAI DARI SINI: 'category' dan 'plan' DIJAMIN ADA dan TERDETEKSI DARI dataStock.json ---
-  // Ini artinya AI udah berhasil nebak kategori dan plan yang user maksud.
+  // Pastikan data yang diambil dari dataStock itu ada sebelum diakses .toUpperCase()
   const selectedCategory = data.categories[category.toUpperCase()];
   const selectedPlan = selectedCategory.detail[plan.toUpperCase()];
 
-  // Pengecekan ekstra (harusnya sih gak perlu kalo `analyzeIntent` bener)
+  // Pengecekan ekstra jika entah bagaimana selectedCategory/selectedPlan masih undefined (seharusnya tidak jika logic analyzeIntent benar)
   if (!selectedCategory || !selectedPlan) {
     console.error(
-      `Error: Kategori atau Plan tidak ditemukan setelah analisis niat untuk kategori: ${category}, plan: ${plan}`,
+      `Error: Category or Plan not found after intent analysis for category: ${category}, plan: ${plan}`,
     );
     return `Maaf kak **${username}**, informasi untuk **${category} ${plan}** tidak ditemukan. Mungkin ada kesalahan pada data stok atau pertanyaan kakak kurang spesifik.`;
   }
@@ -302,9 +270,9 @@ Kalau kakak ingin tahu paket apa saja yang tersedia, ketik saja \`list paket\`.`
   if (!isAvailable) {
     stockStatusMessage = `\n❌ Maaf kak, stok untuk paket **${plan.toUpperCase()}** (${selectedCategory.type.toUpperCase()}) sedang kosong atau RAM yang tersedia kurang dari 2GB. Silakan cek paket lain atau hubungi admin.`;
   } else if (gb && summaryRam && gb > summaryRam) {
-    // Kalo user nanya RAM lebih dari yang ada di summary.
+    // Jika customer meminta RAM lebih dari yang tersedia di summary
     stockStatusMessage = `\n⚠️ Perhatian: Kamu menanyakan ${gb}GB, tapi stok RAM maksimum yang tersedia untuk paket **${plan.toUpperCase()}** saat ini adalah **${summaryRam}GB**.`;
-    // Sarankan paket yang paling mendekati.
+    // Sarankan yang terbaik
     const bestPlanDetail = Object.values(selectedPlan.plans).find(
       (p) =>
         parseFloat(p.ram.replace("GB DDR4", "GB").replace("GB", "")) ===
@@ -313,24 +281,24 @@ Kalau kakak ingin tahu paket apa saja yang tersedia, ketik saja \`list paket\`.`
     if (bestPlanDetail) {
       stockStatusMessage += ` Kami sarankan paket **${summaryRam}GB** dengan harga **${formatRupiah(bestPlanDetail.price)}**.`;
     } else {
+      // Fallback jika detail untuk summaryRam tidak ditemukan di plans (jarang terjadi tapi mungkin)
       stockStatusMessage += ` Silakan pilih RAM yang tersedia hingga ${summaryRam}GB.`;
     }
   }
 
   if (gb) {
-    // Kalo user nanya RAM spesifik.
+    // Jika ada permintaan RAM spesifik
     const planDetails = Object.values(selectedPlan.plans).find(
       (p) =>
         parseFloat(p.ram.replace("GB DDR4", "GB").replace("GB", "")) === gb,
     );
     if (planDetails) {
-      // Kalo paket dengan RAM segitu ada.
       reply += `💰 Harga untuk ${gb}GB: **${formatRupiah(planDetails.price)}**\n`;
       reply += `📦 Storage: ${planDetails.storage}\n`;
       reply += `🚀 CPU: ${planDetails.cpu}, Bandwidth: ${planDetails.bandwidth}\n`;
       reply += `📍 Lokasi: ${planDetails.location}`;
     } else {
-      // Kalo paket dengan RAM segitu gak ada, coba hitung perkiraan dari paket 1GB (kalo ada).
+      // Cek jika harga per GB bisa dihitung dari plan 1GB (jika ada)
       const basePlan = Object.values(selectedPlan.plans).find(
         (p) =>
           parseFloat(p.ram.replace("GB DDR4", "GB").replace("GB", "")) === 1,
@@ -343,7 +311,7 @@ Kalau kakak ingin tahu paket apa saja yang tersedia, ketik saja \`list paket\`.`
         const estimatedPrice = pricePerGB * gb;
 
         reply += `💰 Estimasi Harga untuk ${gb}GB: **${formatRupiah(estimatedPrice)}** _(berdasarkan harga ${baseGBValue}GB: ${formatRupiah(basePlan.price)})_\n`;
-        reply += `📦 Storage: (Estimasi sekitar ${parseFloat(basePlan.storage) * (gb / baseGBValue)}GB) \n`;
+        reply += `📦 Storage: (Estimasi sekitar ${parseFloat(basePlan.storage) * (gb / baseGBValue)}GB) \n`; // Estimasi storage
         reply += `🚀 CPU: ${basePlan.cpu}, Bandwidth: ${basePlan.bandwidth}\n`;
         reply += `📍 Lokasi: ${basePlan.location}`;
       } else {
@@ -351,7 +319,7 @@ Kalau kakak ingin tahu paket apa saja yang tersedia, ketik saja \`list paket\`.`
       }
     }
   } else {
-    // Kalo user cuma nyebut nama paket, tampilkan semua detail plan di paket itu.
+    // Jika hanya nama paket, tampilkan semua rencana yang tersedia
     reply += `Berikut adalah daftar harga dan spesifikasi untuk paket **${plan.toUpperCase()}**:\n`;
     Object.entries(selectedPlan.plans).forEach(([key, planDetail]) => {
       const ramValue = parseFloat(
@@ -362,9 +330,9 @@ Kalau kakak ingin tahu paket apa saja yang tersedia, ketik saja \`list paket\`.`
     });
   }
 
-  reply += stockStatusMessage; // Tambahin info status stok di akhir.
+  reply += stockStatusMessage; // Tambahkan status stok setelah info harga/spesifikasi
 
-  // Ini buat memastikan kalimat penutup cuma muncul sekali dan rapi.
+  // Final closing sentence for all replies, ensure no duplication
   const closingSentence = `\n\n💬 Kalau ada yang ingin ditanyakan lagi, langsung aja ya kak!`;
   if (!reply.includes(closingSentence.trim())) {
     reply = reply
@@ -377,152 +345,295 @@ Kalau kakak ingin tahu paket apa saja yang tersedia, ketik saja \`list paket\`.`
   return reply;
 }
 
-// === BOT READY EVENT (SAAT ONLINE) ===
-// Ini jalan pas bot pertama kali online.
+// --- Event Listener: Bot Ready ---
 client.once("ready", async () => {
-  console.log(`Logged in as ${client.user.tag}!`); // Ngasih tau di konsol kalo bot udah online.
-  await loadPauseStatus(); // Muat status pause AI dari file. Penting biar setelan AI gak ke-reset pas bot restart.
+  console.log(`Logged in as ${client.user.tag}!`);
+  await loadPauseStatus(); // Muat status pause saat bot online
 });
 
-// === EVENT UTAMA: HANDLE MESSAGE MASUK ===
-// Ini jantungnya bot. Setiap ada pesan masuk, fungsi ini jalan.
-client.on("messageCreate", async (message) => {
-  if (message.author.bot) return; // Abaikan pesan dari bot lain (biar gak infinite loop).
+// --- HAPUS EVENT channelCreate DAN interactionCreate UNTUK KONTROL TOMBOL ---
+// Ini dihapus karena kita akan menggunakan perintah Discord untuk kontrol AI.
+// client.on("channelCreate", ...);
+// client.on("interactionCreate", ...);
 
-  const username = message.author.username; // Ambil username yang ngirim pesan.
-  const content = message.content.trim(); // Ambil isi pesan, hapus spasi di awal/akhir.
-  const args = content.slice(COMMAND_PREFIX.length).trim().split(/ +/); // Pisahin argumen command.
-  const command = args.shift().toLowerCase(); // Ambil command-nya.
+// --- Event Listener: Message Create ---
+client.on("messageCreate", async (message) => {
+  if (message.author.bot) return; // Abaikan pesan dari bot
+
+  const username = message.author.username;
+  const content = message.content.trim();
+  const args = content.slice(COMMAND_PREFIX.length).trim().split(/ +/);
+  const command = args.shift().toLowerCase();
 
   // --- START: Command Handling ---
-  // Ini bagian buat ngurusin command admin.
   if (content.startsWith(COMMAND_PREFIX)) {
-    // Pastiin cuma admin yang bisa pake command ini.
+    // Administrator permission check
     if (
       !message.member.permissions.has(PermissionsBitField.Flags.Administrator)
     ) {
-      return message.reply(
-        "❌ Maaf, hanya administrator yang bisa menggunakan perintah ini.",
+      const unauthorizedEmbed = new EmbedBuilder()
+        .setColor("#FF0000")
+        .setTitle("⛔ Akses Ditolak")
+        .setDescription(
+          "Anda tidak memiliki izin untuk menggunakan perintah ini.",
+        )
+        .addFields(
+          { name: "Diperlukan", value: "Administrator", inline: true },
+          { name: "Pengguna", value: message.author.tag, inline: true },
+        )
+        .setTimestamp()
+        .setFooter({
+          text: "Sistem Keamanan • ExtremesID",
+          iconURL: message.guild.iconURL(),
+        });
+
+      console.log(
+        `🚨 [UNAUTHORIZED ACCESS] ${message.author.tag} (${message.author.id}) mencoba menjalankan command "${command}" di #${message.channel.name}`,
       );
+      return message.reply({ embeds: [unauthorizedEmbed] });
     }
 
     if (command === "control") {
+      // Enhanced command logging
+      console.log(`\n📊 [COMMAND EXECUTED] ${new Date().toLocaleString()}
+  ├─ Pengguna: ${message.author.tag} (${message.author.id})
+  ├─ Server: ${message.guild.name} (${message.guild.id})
+  └─ Channel: #${message.channel.name} (${message.channel.id})\n`);
+
       if (args.length === 0) {
-        // Kalo cuma `!sk control`, tampilkan status AI di semua channel tiket.
+        // !sk control: Show channel list and AI status
         const ticketCategory =
           message.guild.channels.cache.get(TICKET_CATEGORY_ID);
+
         if (
           !ticketCategory ||
           ticketCategory.type !== ChannelType.GuildCategory
         ) {
-          return message.reply(
-            "❌ ID kategori tiket tidak valid atau tidak ditemukan.",
+          const errorEmbed = new EmbedBuilder()
+            .setColor("#FF3333")
+            .setTitle("🔧 Error Konfigurasi")
+            .setDescription(
+              "Kategori tiket tidak ditemukan atau ID tidak valid.",
+            )
+            .addFields(
+              { name: "ID Kategori", value: TICKET_CATEGORY_ID, inline: true },
+              {
+                name: "Status",
+                value: ticketCategory ? "Tipe Salah" : "Tidak Ditemukan",
+                inline: true,
+              },
+            )
+            .setTimestamp()
+            .setFooter({
+              text: `Diminta oleh ${message.author.tag} • ExtremesID Control Panel`,
+              iconURL: message.author.displayAvatarURL(),
+            });
+
+          console.error(
+            `❌ [CONFIG ERROR] Ticket category issue detected by ${message.author.tag}`,
           );
+          return message.reply({ embeds: [errorEmbed] });
         }
 
         const channelsInTicketCategory = ticketCategory.children.cache
-          .filter((c) => c.type === ChannelType.GuildText) // Filter cuma channel teks.
-          .sort((a, b) => a.position - b.position); // Urutkan channel berdasarkan posisinya.
+          .filter((c) => c.type === ChannelType.GuildText)
+          .sort((a, b) => a.position - b.position);
 
-        let replyContent = `**📋 Status AI di Kategori Tiket (${ticketCategory.name})**\n\n`;
-        if (channelsInTicketCategory.size === 0) {
-          replyContent += "Tidak ada channel tiket aktif.";
-        } else {
-          channelsInTicketCategory.forEach((channel) => {
-            const status = AI_PAUSE_STATUS.get(channel.id)
-              ? "DINONAKTIFKAN (Paused) ⏸️" // Kalo dipause.
-              : "AKTIF (Playing) ▶️"; // Kalo aktif.
-            replyContent += `- <#${channel.id}> (${channel.name}): **${status}**\n`;
+        const controlEmbed = new EmbedBuilder()
+          .setColor("#4B0082")
+          .setTitle("🎛️ Control Panel - Status AI")
+          .setDescription(`**Kategori Tiket:** ${ticketCategory.name}`)
+          .setThumbnail(message.guild.iconURL())
+          .setTimestamp()
+          .setFooter({
+            text: `Diminta oleh ${message.author.tag} • Page 1/1`,
+            iconURL: message.author.displayAvatarURL(),
           });
+
+        if (channelsInTicketCategory.size === 0) {
+          controlEmbed.addFields({
+            name: "Status Channel",
+            value: "Tidak ada channel tiket aktif saat ini.",
+          });
+        } else {
+          const channelStatuses = channelsInTicketCategory
+            .map((channel) => {
+              const status = AI_PAUSE_STATUS.get(channel.id)
+                ? "⏸️ Dinonaktifkan"
+                : "▶️ Aktif";
+              return `• ${channel} (${channel.name}): **${status}**`;
+            })
+            .join("\n");
+
+          controlEmbed.addFields(
+            { name: "Channel Aktif", value: channelStatuses },
+            {
+              name: "Penggunaan Command",
+              value: [
+                "```" + `${COMMAND_PREFIX} control ai-stop #channel` + "```",
+                "```" + `${COMMAND_PREFIX} control ai-play #channel` + "```",
+                "",
+                "**Keterangan:**",
+                "`ai-stop` - Menonaktifkan AI di channel tertentu",
+                "`ai-play` - Mengaktifkan kembali AI di channel tertentu",
+              ].join("\n"),
+            },
+          );
         }
-        replyContent += `\n!sk control <parameter> <#channel>\n\n \nUntuk mengontrol AI: \`\`\`${COMMAND_PREFIX} control ai-stop <#channel>\`\`\` atau \`\`\`${COMMAND_PREFIX} control ai-play <#channel>\`\`\``;
-        return message.reply(replyContent);
+
+        return message.reply({ embeds: [controlEmbed] });
       } else if (args[0] === "ai-stop" || args[0] === "ai-play") {
-        // Kalo ada `ai-stop` atau `ai-play`.
         const channelMention = args[1];
-        const targetChannelId = channelMention
-          ? channelMention.replace(/[<#>]/g, "")
-          : null; // Ambil ID channel dari mention.
+        const targetChannelId = channelMention?.replace(/[<#>]/g, "");
 
         if (!targetChannelId) {
-          return message.reply(
-            `❌ Format perintah salah. Gunakan: \`${COMMAND_PREFIX} control ${args[0]} <#channel>\``,
+          const usageEmbed = new EmbedBuilder()
+            .setColor("#FFA500")
+            .setTitle("❌ Penggunaan Salah")
+            .setDescription("Format command tidak valid.")
+            .addFields(
+              {
+                name: "Contoh Penggunaan",
+                value: `\`${COMMAND_PREFIX} control ${args[0]} #channel\``,
+              },
+              { name: "Command", value: args[0], inline: true },
+              { name: "Channel", value: "Tidak disebutkan", inline: true },
+            )
+            .setTimestamp();
+
+          console.log(
+            `⚠️ [INVALID USAGE] ${message.author.tag} salah menggunakan command "${command} ${args.join(" ")}"`,
           );
+          return message.reply({ embeds: [usageEmbed] });
         }
 
         const targetChannel = message.guild.channels.cache.get(targetChannelId);
+        const isValidChannel =
+          targetChannel?.parentId === TICKET_CATEGORY_ID &&
+          targetChannel?.type === ChannelType.GuildText;
 
-        // Pastiin channelnya bener-bener channel tiket di kategori yang udah diset.
-        if (
-          !targetChannel ||
-          targetChannel.parentId !== TICKET_CATEGORY_ID ||
-          targetChannel.type !== ChannelType.GuildText
-        ) {
-          return message.reply(
-            `❌ Channel <#${targetChannelId}> tidak ditemukan atau bukan channel tiket di kategori yang ditentukan.`,
+        if (!isValidChannel) {
+          const errorEmbed = new EmbedBuilder()
+            .setColor("#FF4444")
+            .setTitle("🚫 Channel Tidak Valid")
+            .setDescription(
+              "Channel yang dimaksud bukan bagian dari kategori tiket.",
+            )
+            .addFields(
+              {
+                name: "Channel Target",
+                value: `<#${targetChannelId}>`,
+                inline: true,
+              },
+              {
+                name: "Kategori Tiket",
+                value: TICKET_CATEGORY_ID,
+                inline: true,
+              },
+            )
+            .setTimestamp();
+
+          console.log(
+            `❌ [INVALID CHANNEL] ${message.author.tag} mencoba mengontrol AI di channel yang salah (${targetChannelId})`,
           );
+          return message.reply({ embeds: [errorEmbed] });
         }
 
-        const action = args[0] === "ai-stop" ? true : false; // `true` kalo mau dipause, `false` kalo mau di-play.
-        AI_PAUSE_STATUS.set(targetChannel.id, action); // Set status AI di channel itu.
-        await savePauseStatus(); // Simpen status ke file biar gak ilang.
+        const action = args[0] === "ai-stop";
+        AI_PAUSE_STATUS.set(targetChannel.id, action);
+        await savePauseStatus();
 
-        const statusText = action ? "DINONAKTIFKAN" : "DIAKTIFKAN KEMBALI";
-        return message.reply(
-          `✅ AI Luckie berhasil **${statusText}** di channel <#${targetChannel.id}>.`,
+        const statusEmbed = new EmbedBuilder()
+          .setColor(action ? "#FFA500" : "#00FF00")
+          .setTitle(action ? "⏸️ AI Dinonaktifkan" : "▶️ AI Diaktifkan")
+          .setDescription(
+            `Status AI Luckie berhasil diubah di ${targetChannel}`,
+          )
+          .addFields(
+            { name: "Channel", value: targetChannel.toString(), inline: true },
+            {
+              name: "Status",
+              value: action ? "Paused" : "Active",
+              inline: true,
+            },
+            { name: "Admin", value: message.author.toString(), inline: true },
+          )
+          .setTimestamp()
+          .setFooter({
+            text: "ExtremesID AI Control • " + new Date().toLocaleString(),
+            iconURL: message.guild.iconURL(),
+          });
+
+        console.log(
+          `🔄 [AI STATUS CHANGE] ${message.author.tag} ${action ? "menonaktifkan" : "mengaktifkan"} AI di ${targetChannel.name} (${targetChannel.id})`,
         );
+        return message.reply({ embeds: [statusEmbed] });
       }
     }
-    // Kalo command-nya gak dikenal.
+
+    // Unknown command handler
     if (content.startsWith(COMMAND_PREFIX)) {
-      return message.reply(
-        `❌ Perintah \`${command}\` tidak dikenal. Gunakan \`${COMMAND_PREFIX} control\` untuk melihat opsi.`,
+      const unknownCmdEmbed = new EmbedBuilder()
+        .setColor("#FF0000")
+        .setTitle("❌ Command Tidak Dikenal")
+        .setDescription(`Command \`${command}\` tidak valid.`)
+        .addFields(
+          {
+            name: "Command Tersedia",
+            value: `\`${COMMAND_PREFIX} control\``,
+            inline: true,
+          },
+          { name: "Pengguna", value: message.author.tag, inline: true },
+        )
+        .setTimestamp();
+
+      console.log(
+        `❓ [UNKNOWN COMMAND] ${message.author.tag} mencoba menjalankan command tidak dikenal: "${command}"`,
       );
+      return message.reply({ embeds: [unknownCmdEmbed] });
     }
   }
   // --- END: Command Handling ---
 
-  // Kalo pesan bukan dari command admin dan gak di channel tiket, ya udah skip aja.
+  // Jika pesan tidak dimulai dengan COMMAND_PREFIX dan bukan di kategori tiket, abaikan
   if (message.channel.parentId !== TICKET_CATEGORY_ID) return;
 
-  // Cek apakah AI lagi dipause di channel ini. Kalo iya, gak usah respons.
+  // Cek apakah AI sedang dipause di channel ini
   if (AI_PAUSE_STATUS.get(message.channel.id) === true) {
     return; // AI dipause, jangan merespons
   }
 
   try {
-    // Ambil data stok sama template prompt secara barengan (biar cepet).
     const [data, promptTemplate] = await Promise.all([
       getStockData(),
       getTemplatePrompt(),
     ]);
 
     if (!data || !data.categories) {
-      // Pengecekan data `dataStock.json` kosong atau rusak.
-      console.error("dataStock.json kosong atau rusak:", data);
+      // Pengecekan tambahan untuk struktur dataStock.json
+      console.error("dataStock.json is empty or malformed:", data);
       return await message.reply(
         "Maaf kak, data stok layanan tidak tersedia atau formatnya salah. Silakan hubungi admin.",
       );
     }
 
-    const intent = analyzeIntent(content, data); // Tebak niat user.
+    const intent = analyzeIntent(content, data);
 
-    // Kalo ada niat spesifik (kayak nanya harga, list paket, beli, kontak), langsung jawab pake fungsi `generateFormattedReply`.
-    // Ini biar bot langsung to the point tanpa muter-muter pake AI generik.
+    // Prioritaskan respons dari fungsi generateFormattedReply
+    // Hanya panggil jika ada intent spesifik (bukan 'general') atau jika category/plan terdeteksi
     if (intent.queryType !== "general" || (intent.category && intent.plan)) {
       const reply = await generateFormattedReply(content, username, data);
       return await message.reply(reply);
     }
 
-    // Kalo gak ada niat spesifik (pertanyaan umum), baru deh oper ke Gemini AI.
-    const messages = await message.channel.messages.fetch({ limit: 10 }); // Ambil 10 pesan terakhir di channel itu.
+    // Jika tidak ada intent spesifik dan queryType adalah "general", fallback ke Gemini AI generik
+    const messages = await message.channel.messages.fetch({ limit: 10 });
     const conversation = Array.from(messages.values())
-      .reverse() // Balik urutan pesan biar kronologis.
-      .map((m) => `${m.author.username}: ${m.content}`) // Format jadi `Username: Isi Pesan`.
-      .join("\n"); // Gabungin jadi satu string.
+      .reverse()
+      .map((m) => `${m.author.username}: ${m.content}`)
+      .join("\n");
 
-    // Siapin data stok yang lebih detail buat dikasih ke Gemini.
-    // Ini biar Gemini tahu info-info hosting kita.
+    // Persiapkan data stok yang lebih kaya untuk prompt Gemini
     const stockDataForGemini = Object.entries(data.categories)
       .map(([catKey, catValue]) => {
         let categoryInfo = `- **${catKey.toUpperCase()}**:\n`;
@@ -532,7 +643,7 @@ client.on("messageCreate", async (message) => {
               catKey,
               planKey,
               data,
-            );
+            ); // Mendapatkan status dan RAM summary
             let status = isAvailable ? "Tersedia" : "Stok Habis";
             if (isAvailable && summaryRam > 0) {
               status += ` (Maks RAM: ${summaryRam}GB)`;
@@ -550,46 +661,38 @@ client.on("messageCreate", async (message) => {
       })
       .join("\n\n");
 
-    // Ini prompt utama yang dikirim ke Gemini.
-    // Ada template-nya, data stok, sama riwayat percakapan.
     const prompt = `${promptTemplate}\n\nData Harga & Stok Layanan ExtremesID:\n${stockDataForGemini}\n\nPercakapan:\n${conversation}\nLuckie:`;
 
-    const result = await model.generateContent(prompt); // Kirim prompt ke Gemini!
-    let reply = result.response.text().trim(); // Ambil jawaban dari Gemini.
+    const result = await model.generateContent(prompt);
+    let reply = result.response.text().trim();
 
-    // Ini buat mastiin "Halo kak" cuma muncul sekali.
+    // Pencegahan pengulangan "Halo kak"
     if (!/^halo kak/i.test(reply)) {
       reply = `Halo kak **${username}**! ` + reply;
     }
 
-    // Ini juga buat mastiin kalimat penutup cuma muncul sekali dan rapi.
+    // Pencegahan pengulangan kalimat penutup dan memastikan hanya satu kali muncul
     const closingSentence = `\n\n💬 Kalau ada yang ingin ditanyakan lagi, langsung aja ya kak!`;
     if (!reply.includes(closingSentence.trim())) {
       reply = reply
-        .replace(/kalau ada yang mau ditanyakan lagi, jangan ragu ya!/gi, "")
+        .replace(/kalau ada yang mau ditanyakan lagi, jangan ragu ya!/gi, "") // Sudah ada
         .trim();
-      reply = reply.replace(/ada lagi yang bisa luckie bantu\?/gi, "").trim();
-      reply = reply.replace(/jangan ragu untuk bertanya lagi\./gi, "").trim();
-      reply = reply.replace(/perlu info lain, kak\?/gi, "").trim();
+      reply = reply.replace(/ada lagi yang bisa luckie bantu\?/gi, "").trim(); // Tambahkan ? untuk mencocokkan pertanyaan
+      reply = reply.replace(/jangan ragu untuk bertanya lagi\./gi, "").trim(); // Tambahkan \. untuk mencocokkan titik
+      reply = reply.replace(/perlu info lain, kak\?/gi, "").trim(); // Tambahkan jika ada variasi ini
       reply = reply
         .replace(/mau sekalian dicekin harganya juga\?/gi, "")
-        .trim();
+        .trim(); // Tambahkan jika ada variasi ini
       reply += closingSentence;
     }
 
-    await message.reply(reply); // Balas pesan user.
+    await message.reply(reply);
   } catch (err) {
-    console.error("Error:", err); // Kalo ada error, munculin di konsol.
+    console.error("Error:", err);
     await message.reply(
       "Maaf kak, ada gangguan teknis. Kontak admin ya: https://wa.me/+6288987416154",
-    ); // Kasih tahu user kalo ada error.
+    );
   }
 });
 
-// === LOGIN ===
-client.login(DISCORD_TOKEN); // Ini yang bikin bot lu nyambung ke Discord. JANGAN SAMPE GAGAL!
-
-// === SELESAI! ===
-// Yang mau oprek bagian bawah: pastikan lu kaga TOLOL dan ngerti logic intent dan AI.
-// Kalau gak yakin, tanya dulu. Jangan asal ubah bagian AI & data parser-nya.
-// Semoga bermanfaat. maaf masih pemula ✌️
+client.login(DISCORD_TOKEN);
