@@ -5,14 +5,13 @@
 [![Node.js](https://img.shields.io/badge/node.js-16.0+-brightgreen.svg)](https://nodejs.org/)
 [![Discord.js](https://img.shields.io/badge/discord.js-14.0+-7289da.svg)](https://discord.js.org/)
 
-**Luckie AI** adalah bot Discord berbasis AI yang dirancang khusus untuk customer service layanan hosting. Bot ini menggunakan Google Gemini AI untuk memberikan respons yang cerdas dan akurat tentang informasi hosting, harga, stok, dan bantuan pelanggan.
+**Luckie AI** adalah bot Discord berbasis AI yang dirancang khusus untuk customer service. Bot ini menggunakan Google Gemini AI untuk memberikan respons yang cerdas dan akurat tentang informasi hosting, harga, stok, dan bantuan.
 
 ## ✨ Fitur Utama
 
 🧠 **AI-Powered Customer Service**
 - Respons otomatis menggunakan Google Gemini 2.5 Flash
 - Analisis intent pengguna untuk memberikan jawaban yang tepat
-- Dukungan percakapan kontekstual
 
 📊 **Manajemen Stok & Harga**
 - Monitoring stok hosting real-time dari file JSON
@@ -24,8 +23,8 @@
 - Command system dengan prefix yang dapat dikustomisasi
 - Status monitoring untuk semua channel tiket
 
- 🎯 **Deteksi Intent Cerdas**
-- Otomatis mendeteksi maksud pengguna (beli, tanya harga, kontak, dll)
+ 🎯 **Deteksi Cerdas**
+- Otomatis mendeteksi maksud customer (beli, tanya harga, kontak, dll)
 - Respons khusus untuk pertanyaan spesifik
 - Format jawaban yang konsisten dan profesional
 
@@ -33,7 +32,7 @@
 
 # 🚀 Quick Start
 
-Persyaratan Sistem
+System Requirements
 - Node.js 16.0 atau lebih tinggi
 - NPM atau Yarn
 - Discord Bot Token
@@ -65,7 +64,7 @@ COMMAND_PREFIX=!sk
 ```
 
 ### 4. Setup Data Stok
-Sesuaikan file `dataStock.json` dengan data hosting Anda.
+Sesuaikan file `dataStock.json` dengan data Anda.
 
 ### 5. Kustomisasi AI Template
 Edit `luckie-template.txt` untuk menyesuaikan personality dan response AI.
@@ -83,11 +82,11 @@ npm start
 luckie-ai-discord-bot/
 ├── index.js                 # File utama bot
 ├── package.json             # Dependencies dan scripts
-├── .env                     # Environment variables (JANGAN COMMIT!)
+├── .env                     # Environment variables
 ├── env.txt                  # Template environment variables
 ├── luckie-template.txt      # Template prompt AI
-├── dataStock.json          # Data harga dan stok hosting
-├── ai_pause_status.json    # Status pause AI (auto-generated)
+├── dataStock.json          # Data harga dan stok
+├── ai_pause_status.json    # Status pause AI 
 └── README.md               # Dokumentasi ini
 ```
 
@@ -177,7 +176,7 @@ File `dataStock.json` menggunakan struktur sebagai berikut:
 # 🤖 Cara Kerja AI
 
 ### 1. **Intent Analysis**
-Bot menganalisis pesan pengguna untuk menentukan intent:
+Bot menganalisis pesan customer untuk menentukan intent:
 - `list_packages` - Minta daftar paket
 - `buy` - Ingin membeli
 - `contact` - Minta kontak
